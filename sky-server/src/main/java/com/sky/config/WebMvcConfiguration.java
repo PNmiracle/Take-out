@@ -1,10 +1,13 @@
 package com.sky.config;
 
 import com.sky.interceptor.JwtTokenAdminInterceptor;
+import com.sky.json.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
@@ -14,6 +17,8 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
+
+import java.util.List;
 
 /**
  * 配置类，注册web层相关组件
@@ -39,6 +44,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     /**
      * 通过knife4j生成接口文档
+     *
      * @return
      */
     @Bean
@@ -60,6 +66,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     /**
      * 设置静态资源映射
+     *
      * @param registry
      */
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -67,4 +74,29 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
         registry.addResourceHandler("/doc.html").addResourceLocations("classpath:/META-INF/resources/");
         registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
+
+    /**
+     * 扩展消息转换器 以支持jsonp
+     * <p>
+     * 该方法旨在为Spring框架的消息转换器列表添加一个自定义配置的MappingJackson2HttpMessageConverter，
+     * 以支持JSONP（JSON with Padding）数据格式，这在跨域请求中尤为有用
+     * </p>
+     *
+     * @param converters 消息转换器列表，该列表将被扩展以包括新的转换器实例
+     */
+    @Override
+    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        // 日志输出，表示消息转换器扩展开始
+        log.info("开始扩展消息转换器...");
+
+        // 创建一个新的MappingJackson2HttpMessageConverter实例
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+
+        // 设置该转换器使用的ObjectMapper为新的JacksonObjectMapper实例，以支持自定义序列化和反序列化配置
+        converter.setObjectMapper(new JacksonObjectMapper());
+
+        // 将自定义配置的转换器添加到消息转换器列表的开头，确保它优先于其他转换器
+        converters.add(0, converter);
+    }
+
 }
